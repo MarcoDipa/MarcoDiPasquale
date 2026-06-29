@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refresh-btn');
     const refreshIcon = document.getElementById('refresh-icon');
     const retryBtn = document.getElementById('retry-btn');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
     const lastUpdatedText = document.getElementById('last-updated-text');
     const themeToggle = document.getElementById('theme-toggle');
     const themeIconSun = document.getElementById('theme-icon-sun');
@@ -53,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             lastFetchedTime = new Date();
             updateLastUpdatedTimeText();
+            exportCsvBtn.style.display = 'inline-flex';
             setLoading(false);
         } catch (error) {
             console.error('Fetch error:', error);
@@ -341,6 +343,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Export currently filtered updates as CSV
+    function handleExportCSV() {
+        const filtered = parsedUpdates.filter(update => {
+            const matchesFilter = currentFilter === 'all' || update.categoryInfo.category === currentFilter;
+            const matchesSearch = !searchQuery || 
+                update.plainText.toLowerCase().includes(searchQuery) ||
+                update.date.toLowerCase().includes(searchQuery) ||
+                update.type.toLowerCase().includes(searchQuery);
+            return matchesFilter && matchesSearch;
+        });
+
+        if (filtered.length === 0) {
+            alert("No updates to export!");
+            return;
+        }
+
+        const headers = ["Date", "Category", "Content", "Official Link"];
+        const csvRows = [headers.join(",")];
+
+        filtered.forEach(update => {
+            const escapedDate = update.date.replace(/"/g, '""');
+            const escapedCategory = update.categoryInfo.category.replace(/"/g, '""');
+            const escapedContent = update.plainText.replace(/"/g, '""');
+            const escapedLink = update.originalLink.replace(/"/g, '""');
+            csvRows.push(`"${escapedDate}","${escapedCategory}","${escapedContent}","${escapedLink}"`);
+        });
+
+        const csvContent = "\uFEFF" + csvRows.join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        const filterName = currentFilter === 'all' ? 'all' : currentFilter.toLowerCase();
+        link.setAttribute("download", `bigquery_releases_${filterName}.csv`);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
     // --- State UI Handlers ---
 
     function setLoading(isLoading) {
@@ -349,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorState.style.display = 'none';
             emptyState.style.display = 'none';
             timelineContainer.style.display = 'none';
+            exportCsvBtn.style.display = 'none';
             refreshIcon.classList.add('rotate-loading');
             refreshBtn.disabled = true;
         } else {
@@ -362,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingState.style.display = 'none';
         emptyState.style.display = 'none';
         timelineContainer.style.display = 'none';
+        exportCsvBtn.style.display = 'none';
         errorMessage.textContent = msg;
         errorState.style.display = 'block';
         refreshIcon.classList.remove('rotate-loading');
@@ -448,9 +494,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Refresh buttons
+    // Refresh and Export buttons
     refreshBtn.addEventListener('click', () => fetchReleases(true));
     retryBtn.addEventListener('click', () => fetchReleases(true));
+    exportCsvBtn.addEventListener('click', handleExportCSV);
 
     // --- Init ---
     initTheme();
