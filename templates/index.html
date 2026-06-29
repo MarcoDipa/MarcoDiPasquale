@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Pulse - Live Updates</title>
+    <meta name="description" content="Stay up to date with the latest Google Cloud BigQuery features, changes, fixes, and deprecations. Parse, search, and share updates on X/Twitter.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    <!-- Background glow elements -->
+    <div class="glow-sphere sphere-1"></div>
+    <div class="glow-sphere sphere-2"></div>
+
+    <!-- Navigation Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-title">BigQuery</span>
+                    <span class="logo-subtitle">Release Pulse</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="cache-info" id="cache-info">
+                    <span class="pulse-dot"></span>
+                    <span id="last-updated-text">Connecting...</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-secondary btn-icon" title="Refresh Release Notes">
+                    <i class="fa-solid fa-rotate" id="refresh-icon"></i>
+                    <span>Refresh</span>
+                </button>
+                <button id="theme-toggle" class="btn btn-icon-only" title="Toggle Theme">
+                    <i class="fa-solid fa-sun" id="theme-icon-sun"></i>
+                    <i class="fa-solid fa-moon" id="theme-icon-moon" style="display: none;"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <!-- Stats Dashboard Section -->
+        <section class="stats-section">
+            <div class="stat-card" id="stat-total">
+                <div class="stat-icon bg-indigo"><i class="fa-solid fa-newspaper"></i></div>
+                <div class="stat-content">
+                    <span class="stat-label">Total Updates</span>
+                    <span class="stat-value" id="count-total">0</span>
+                </div>
+            </div>
+            <div class="stat-card" id="stat-features">
+                <div class="stat-icon bg-emerald"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="stat-content">
+                    <span class="stat-label">Features</span>
+                    <span class="stat-value" id="count-features">0</span>
+                </div>
+            </div>
+            <div class="stat-card" id="stat-changes">
+                <div class="stat-icon bg-blue"><i class="fa-solid fa-code-compare"></i></div>
+                <div class="stat-content">
+                    <span class="stat-label">Changes</span>
+                    <span class="stat-value" id="count-changes">0</span>
+                </div>
+            </div>
+            <div class="stat-card" id="stat-fixes">
+                <div class="stat-icon bg-amber"><i class="fa-solid fa-wrench"></i></div>
+                <div class="stat-content">
+                    <span class="stat-label">Fixes & Depr.</span>
+                    <span class="stat-value" id="count-fixes">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search and Filters Section -->
+        <section class="control-section">
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search-input" placeholder="Search release notes by keywords (e.g. ODBC, SQL, Partition)..." autocomplete="off">
+                <button id="search-clear" class="search-clear" style="display: none;" title="Clear search">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="filters-container">
+                <button class="filter-chip active" data-filter="all">All Updates</button>
+                <button class="filter-chip border-emerald" data-filter="Feature"><span class="chip-indicator bg-emerald"></span>Features</button>
+                <button class="filter-chip border-blue" data-filter="Change"><span class="chip-indicator bg-blue"></span>Changes</button>
+                <button class="filter-chip border-amber" data-filter="Fix"><span class="chip-indicator bg-amber"></span>Fixes</button>
+                <button class="filter-chip border-rose" data-filter="Deprecation"><span class="chip-indicator bg-rose"></span>Deprecations</button>
+                <button class="filter-chip border-purple" data-filter="Note"><span class="chip-indicator bg-purple"></span>Notes</button>
+            </div>
+        </section>
+
+        <!-- Timeline / Feed Section -->
+        <section class="feed-section">
+            <div id="loading-state" class="loading-state">
+                <div class="spinner-container">
+                    <div class="pulse-ring"></div>
+                    <div class="spinner"></div>
+                </div>
+                <h3>Fetching BigQuery Release Notes</h3>
+                <p>Retrieving and parsing the latest updates from Google Cloud...</p>
+            </div>
+
+            <div id="error-state" class="error-state" style="display: none;">
+                <div class="error-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <h3>Failed to load release notes</h3>
+                <p id="error-message">Unknown error occurred</p>
+                <button id="retry-btn" class="btn btn-primary">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Try Again
+                </button>
+            </div>
+
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <div class="empty-icon"><i class="fa-solid fa-search"></i></div>
+                <h3>No matching updates found</h3>
+                <p>Try adjusting your filters or search keywords.</p>
+                <button id="clear-filters-btn" class="btn btn-secondary">Clear Filters & Search</button>
+            </div>
+
+            <div id="timeline-container" class="timeline" style="display: none;">
+                <!-- Timeline items will be injected here by Javascript -->
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>BigQuery Release Pulse &copy; 2026. Data sourced in real-time from the official <a href="https://docs.cloud.google.com/feeds/bigquery-release-notes.xml" target="_blank" rel="noopener noreferrer">Google Cloud Feed</a>.</p>
+    </footer>
+
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
