@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const retryBtn = document.getElementById('retry-btn');
     const exportCsvBtn = document.getElementById('export-csv-btn');
     const lastUpdatedText = document.getElementById('last-updated-text');
+    const toastContainer = document.getElementById('toast-container');
     const themeToggle = document.getElementById('theme-toggle');
     const themeIconSun = document.getElementById('theme-icon-sun');
     const themeIconMoon = document.getElementById('theme-icon-moon');
@@ -56,6 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateLastUpdatedTimeText();
             exportCsvBtn.style.display = 'inline-flex';
             setLoading(false);
+            if (bypassCache) {
+                showToast("Release notes synchronized successfully!", "success");
+            }
         } catch (error) {
             console.error('Fetch error:', error);
             showError(error.message || 'Failed to connect to the backend server.');
@@ -269,13 +273,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="fa-solid ${update.categoryInfo.icon} mr-1"></i> ${update.categoryInfo.label}
                         </span>
                         <div class="card-meta-links">
-                            <a href="${update.originalLink}" target="_blank" rel="noopener noreferrer" class="btn btn-icon-only card-btn" title="View official release log">
+                            <a href="${update.originalLink}" target="_blank" rel="noopener noreferrer" class="btn btn-icon-only card-btn" title="View official release log" aria-label="View official release log">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                             </a>
                         </div>
                     </div>
                     <div class="card-content">
-                        ${update.html}
+                        ${highlightText(update.html, searchQuery)}
                     </div>
                     <div class="card-footer">
                         <button class="card-btn btn-copy" data-id="${update.id}">
@@ -333,6 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonEl.style.borderColor = 'var(--color-feature)';
             buttonEl.style.color = 'var(--color-feature)';
             
+            showToast("Copied to clipboard!", "success");
+            
             setTimeout(() => {
                 buttonEl.innerHTML = originalHTML;
                 buttonEl.style.borderColor = '';
@@ -340,6 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 2000);
         }).catch(err => {
             console.error('Clipboard write failed:', err);
+            showToast("Failed to copy text", "error");
         });
     }
 
@@ -383,6 +390,65 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        
+        showToast(`CSV Exported: ${filtered.length} items`, "info");
+    }
+
+    // --- Utility UX Helper Functions ---
+
+    // Show dynamic toast notifications
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        let icon = 'fa-check';
+        if (type === 'error') icon = 'fa-triangle-exclamation';
+        else if (type === 'info') icon = 'fa-file-csv';
+        
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+        toastContainer.appendChild(toast);
+        
+        // Force reflow and display
+        setTimeout(() => toast.classList.add('show'), 10);
+        
+        // Auto-destroy after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Escape query string characters for regex
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Highlight text matching the search query safely without breaking HTML nodes
+    function highlightText(htmlContent, query) {
+        if (!query) return htmlContent;
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+        
+        function walk(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.nodeValue;
+                if (regex.test(text)) {
+                    const span = document.createElement('span');
+                    span.innerHTML = text.replace(regex, '<mark class="highlight">$1</mark>');
+                    node.parentNode.replaceChild(span, node);
+                }
+            } else {
+                const children = Array.from(node.childNodes);
+                for (let i = children.length - 1; i >= 0; i--) {
+                    walk(children[i]);
+                }
+            }
+        }
+        
+        walk(doc.body);
+        return doc.body.innerHTML;
     }
 
     // --- State UI Handlers ---

@@ -37,15 +37,15 @@
                     <span class="pulse-dot"></span>
                     <span id="last-updated-text">Connecting...</span>
                 </div>
-                <button id="export-csv-btn" class="btn btn-secondary btn-icon" title="Esporta in CSV" style="display: none;">
+                <button id="export-csv-btn" class="btn btn-secondary btn-icon" title="Esporta in CSV" aria-label="Esporta in CSV" style="display: none;">
                     <i class="fa-solid fa-file-csv"></i>
                     <span>Esporta CSV</span>
                 </button>
-                <button id="refresh-btn" class="btn btn-secondary btn-icon" title="Refresh Release Notes">
+                <button id="refresh-btn" class="btn btn-secondary btn-icon" title="Refresh Release Notes" aria-label="Refresh Release Notes">
                     <i class="fa-solid fa-rotate" id="refresh-icon"></i>
                     <span>Refresh</span>
                 </button>
-                <button id="theme-toggle" class="btn btn-icon-only" title="Toggle Theme">
+                <button id="theme-toggle" class="btn btn-icon-only" title="Toggle Theme" aria-label="Toggle dark and light theme">
                     <i class="fa-solid fa-sun" id="theme-icon-sun"></i>
                     <i class="fa-solid fa-moon" id="theme-icon-moon" style="display: none;"></i>
                 </button>
@@ -141,6 +141,9 @@
     <footer class="app-footer">
         <p>BigQuery Release Pulse &copy; 2026. Data sourced in real-time from the official <a href="https://docs.cloud.google.com/feeds/bigquery-release-notes.xml" target="_blank" rel="noopener noreferrer">Google Cloud Feed</a>.</p>
     </footer>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
